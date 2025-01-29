@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inloggning</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        .login-container, .dashboard-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .login-container input, .dashboard-container input, .dashboard-container select, .dashboard-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-container button, .dashboard-container button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .login-container button:hover, .dashboard-container button:hover {
+            background-color: #0056b3;
+        }
+        .dashboard-container {
+            display: none;
+        }
+        .row {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .row input {
+            width: 100%;
+        }
+        @media (min-width: 600px) {
+            .row {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+            .row input {
+                width: 48%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="login-container">
+        <h2>Logga in</h2>
+        <input type="text" id="username" placeholder="Användarnamn">
+        <input type="password" id="password" placeholder="Lösenord">
+        <button onclick="login()">Logga in</button>
+    </div>
+    <div class="dashboard-container" id="dashboard-container">
+        <h2>Välkommen</h2>
+        <div class="row">
+            <input type="text" id="loggedInUser" readonly>
+            <input type="date" id="date">
+        </div>
+        <div class="row">
+            <input type="number" id="inWeight" placeholder="In Vikt">
+            <input type="number" id="outWeight" placeholder="Ut Vikt">
+        </div>
+        <div class="row">
+            <input type="text" placeholder="Från" id="from">
+            <input type="text" placeholder="Till" id="to">
+        </div>
+        <input type="text" placeholder="Sort" id="sort">
+        <textarea placeholder="Anteckningar" rows="4" id="notes"></textarea>
+        <label for="extraFields">Välj antal extra rutor:</label>
+        <select id="extraFields" onchange="addExtraFields()">
+            <option value="0">0</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select>
+        <div id="extraFieldsContainer"></div>
+        <button onclick="calculateExtraWeights()">Beräkna Lastvikt</button>
+        <input type="number" id="totalExtraWeight" placeholder="Total Lastvikt" readonly>
+        <button onclick="sendEmail()">Skicka</button>
+    </div>
+    <script>
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            if (username === 'PAU04H' && password === 'PAU04H') {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('dashboard-container').style.display = 'flex';
+                document.getElementById('loggedInUser').value = username;
+            } else {
+                alert('Fel användarnamn eller lösenord');
+            }
+        }
+
+        function addExtraFields() {
+            const container = document.getElementById('extraFieldsContainer');
+            container.innerHTML = '';
+            const numberOfFields = parseInt(document.getElementById('extraFields').value);
+            for (let i = 0; i < numberOfFields; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.placeholder = `Lastvikt ${i + 1}`;
+                input.className = 'extraWeight';
+                container.appendChild(input);
+            }
+        }
+
+        function calculateExtraWeights() {
+            const inWeight = parseFloat(document.getElementById('inWeight').value) || 0;
+            const outWeight = parseFloat(document.getElementById('outWeight').value) || 0;
+            const netWeight = inWeight - outWeight;
+
+            const extraWeights = document.getElementsByClassName('extraWeight');
+            let totalExtraWeight = 0;
+            for (let i = 0; i < extraWeights.length; i++) {
+                totalExtraWeight += parseFloat(extraWeights[i].value) || 0;
+            }
+            document.getElementById('totalExtraWeight').value = totalExtraWeight + netWeight;
+        }
+
+        function sendEmail() {
+            const username = document.getElementById('loggedInUser').value;
+            const date = document.getElementById('date').value;
+            const inWeight = document.getElementById('inWeight').value;
+            const outWeight = document.getElementById('outWeight').value;
+            const from = document.getElementById('from').value;
+            const to = document.getElementById('to').value;
+            const sort = document.getElementById('sort').value;
+            const notes = document.getElementById('notes').value;
+            const totalExtraWeight = document.getElementById('totalExtraWeight').value;
+
+            let extraFields = '';
+            const extraFieldsContainer = document.getElementById('extraFieldsContainer');
+            const extraInputs = extraFieldsContainer.getElementsByTagName('input');
+            for (let i = 0; i < extraInputs.length; i++) {
+                if (extraInputs[i].value) {
+                    extraFields += `Lastvikt ${i + 1}: ${extraInputs[i].value}\n`;
+                }
+            }
+
+            const emailSubject = `Formulärdata - ${username} - ${date}`;
+            const emailBody = `
+                Användarnamn: ${username}\n
+                Datum: ${date}\n
+                In Vikt: ${inWeight}\n
+                Ut Vikt: ${outWeight}\n
+                Från: ${from}\n
+                Till: ${to}\n
+                Sort: ${sort}\n
+                Anteckningar: ${notes}\n
+                Total Lastvikt: ${totalExtraWeight}\n
+                ${extraFields}
+            `;
+
+            window.location.href = `mailto:example@example.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+        }
+    </script>
+</body>
+</html>
